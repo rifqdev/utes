@@ -39,8 +39,6 @@ Buka [http://localhost:3000](http://localhost:3000) di browser.
 
 ## Dokumentasi
 
-- 📖 [Quick Start Guide](QUICK_START.md) - Panduan cepat untuk memulai
-- 🗺️ [Routing Architecture](ROUTING.md) - Penjelasan lengkap routing dan navigation
 - 🏗️ [Project Structure](PROJECT_STRUCTURE.md) - Struktur project dan best practices
 - 📝 [Migration Guide](MIGRATION.md) - Dokumentasi migrasi dari Vite ke Next.js
 
