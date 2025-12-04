@@ -5,28 +5,41 @@ import { Mail, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AuthLayout } from '@/components/AuthLayout';
+import { signInWithMagicLink } from '@/app/actions/auth';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
-    // Simulasi pengiriman magic link
-    setTimeout(() => {
+    const result = await signInWithMagicLink(email);
+    
+    if (result.error) {
+      setError(result.error);
+      setIsLoading(false);
+    } else {
       setIsLoading(false);
       setEmailSent(true);
-    }, 1500);
+    }
   };
 
-  const handleResend = () => {
+  const handleResend = async () => {
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+    setError('');
+    
+    const result = await signInWithMagicLink(email);
+    
+    if (result.error) {
+      setError(result.error);
+    }
+    
+    setIsLoading(false);
   };
 
   if (emailSent) {
@@ -117,6 +130,9 @@ export default function LoginPage() {
                 className="w-full pl-10 lg:pl-12 pr-4 py-2.5 lg:py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm lg:text-base"
               />
             </div>
+            {error && (
+              <p className="text-xs lg:text-sm text-red-600">{error}</p>
+            )}
           </div>
 
           <Button
