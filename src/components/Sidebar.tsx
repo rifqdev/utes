@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { History, ChevronRight, Trophy, Clock, CheckCircle2, XCircle, User, LogOut, X, PanelLeft, BookOpen, Menu } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { History, ChevronRight, Trophy, Clock, CheckCircle2, XCircle, User, X, PanelLeft, BookOpen, Menu } from 'lucide-react';
 import { Card } from './Card';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter } from 'next/navigation';
+import { getUser } from '@/app/actions/auth';
+import { LogoutButton } from './LogoutButton';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface TestHistory {
   id: string;
@@ -74,19 +77,16 @@ const mockHistory: TestHistory[] = [
 export const Sidebar = () => {
   const { isSidebarOpen, toggleSidebar } = useLayout();
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [user, setUser] = useState<SupabaseUser | null>(null);
   const router = useRouter();
 
-  // Simulasi user data (nanti akan diganti dengan Supabase auth)
-  const user = {
-    email: 'user@example.com',
-    name: 'User'
-  };
-
-  const handleLogout = () => {
-    // Simulasi logout
-    setShowProfileModal(false);
-    router.push('/login');
-  };
+  useEffect(() => {
+    const fetchUser = async () => {
+      const userData = await getUser();
+      setUser(userData);
+    };
+    fetchUser();
+  }, []);
 
   const getScoreColor = (score: number, total: number) => {
     const percentage = (score / total) * 100;
@@ -321,23 +321,15 @@ export const Sidebar = () => {
                     <User size={20} />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm">{user.name}</p>
-                    <p className="text-xs opacity-90">{user.email}</p>
+                    <p className="font-semibold text-sm">{user?.user_metadata?.name || 'User'}</p>
+                    <p className="text-xs opacity-90 truncate max-w-[180px]">{user?.email || 'user@example.com'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Content */}
               <div className="p-2">
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-red-50 rounded-lg transition-colors group"
-                >
-                  <LogOut size={18} className="text-red-600" />
-                  <span className="text-sm font-medium text-slate-700 group-hover:text-red-600">
-                    Keluar
-                  </span>
-                </button>
+                <LogoutButton variant="text" className="w-full" />
               </div>
             </div>
           </div>
