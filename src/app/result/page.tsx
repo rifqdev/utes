@@ -20,6 +20,7 @@ export default function ResultPage() {
     setIsAnswered,
     setEssayAnswer,
     setEssayFeedbackMode,
+    setUserAnswers,
   } = useQuiz();
   const router = useRouter();
 
@@ -51,6 +52,7 @@ export default function ResultPage() {
     setIsAnswered(false);
     setEssayAnswer('');
     setEssayFeedbackMode(false);
+    setUserAnswers(new Array(activeQuiz.length).fill(null));
     
     if (quizMode === 'nob') {
       router.push('/quiz');

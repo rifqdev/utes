@@ -61,6 +61,99 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_results: {
+        Row: {
+          id: string
+          user_id: string
+          video_id: string
+          video_title: string
+          video_url: string
+          quiz_mode: string
+          score: number
+          total_questions: number
+          questions: Json
+          user_answers: Json
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          video_id: string
+          video_title: string
+          video_url: string
+          quiz_mode: string
+          score: number
+          total_questions: number
+          questions: Json
+          user_answers: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          video_id?: string
+          video_title?: string
+          video_url?: string
+          quiz_mode?: string
+          score?: number
+          total_questions?: number
+          questions?: Json
+          user_answers?: Json
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quiz_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          video_id: string
+          video_title: string
+          video_url: string
+          video_thumbnail: string | null
+          video_channel: string | null
+          video_duration: string | null
+          quiz_mode: string
+          questions: Json
+          transcript_text: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          video_id: string
+          video_title: string
+          video_url: string
+          video_thumbnail?: string | null
+          video_channel?: string | null
+          video_duration?: string | null
+          quiz_mode: string
+          questions: Json
+          transcript_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          video_id?: string
+          video_title?: string
+          video_url?: string
+          video_thumbnail?: string | null
+          video_channel?: string | null
+          video_duration?: string | null
+          quiz_mode?: string
+          questions?: Json
+          transcript_text?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

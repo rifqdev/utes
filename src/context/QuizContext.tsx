@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { MOCK_QUIZ_FULL, MOCK_QUIZ_PARTIAL, MOCK_ESSAY_DATA } from '@/data/mockData';
 import { YouTubeMetadata, YouTubeTranscript } from '@/app/actions/youtube';
+import { QuizQuestion } from '@/app/actions/openai';
 
 interface QuizContextType {
   inputUrl: string;
@@ -33,6 +34,14 @@ interface QuizContextType {
   setYoutubeMetadata: (metadata: YouTubeMetadata | null) => void;
   youtubeTranscript: YouTubeTranscript | null;
   setYoutubeTranscript: (transcript: YouTubeTranscript | null) => void;
+  generatedQuiz: QuizQuestion[];
+  setGeneratedQuiz: (quiz: QuizQuestion[]) => void;
+  userAnswers: (number | null)[];
+  setUserAnswers: (answers: (number | null)[]) => void;
+  quizSessionId: string | null;
+  setQuizSessionId: (id: string | null) => void;
+  currentVideoInfo: { videoId: string; videoTitle: string; videoUrl: string } | null;
+  setCurrentVideoInfo: (info: { videoId: string; videoTitle: string; videoUrl: string } | null) => void;
   resetQuiz: () => void;
 }
 
@@ -52,8 +61,12 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   const [essayFeedbackMode, setEssayFeedbackMode] = useState(false);
   const [youtubeMetadata, setYoutubeMetadata] = useState<YouTubeMetadata | null>(null);
   const [youtubeTranscript, setYoutubeTranscript] = useState<YouTubeTranscript | null>(null);
+  const [generatedQuiz, setGeneratedQuiz] = useState<QuizQuestion[]>([]);
+  const [userAnswers, setUserAnswers] = useState<(number | null)[]>([]);
+  const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
+  const [currentVideoInfo, setCurrentVideoInfo] = useState<{ videoId: string; videoTitle: string; videoUrl: string } | null>(null);
 
-  const activeQuiz = isFullVideo ? MOCK_QUIZ_FULL : MOCK_QUIZ_PARTIAL;
+  const activeQuiz = generatedQuiz.length > 0 ? generatedQuiz : (isFullVideo ? MOCK_QUIZ_FULL : MOCK_QUIZ_PARTIAL);
   const activeEssay = MOCK_ESSAY_DATA;
 
   const resetQuiz = () => {
@@ -70,6 +83,10 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     setEssayFeedbackMode(false);
     setYoutubeMetadata(null);
     setYoutubeTranscript(null);
+    setGeneratedQuiz([]);
+    setUserAnswers([]);
+    setQuizSessionId(null);
+    setCurrentVideoInfo(null);
   };
 
   return (
@@ -103,6 +120,14 @@ export function QuizProvider({ children }: { children: ReactNode }) {
         setYoutubeMetadata,
         youtubeTranscript,
         setYoutubeTranscript,
+        generatedQuiz,
+        setGeneratedQuiz,
+        userAnswers,
+        setUserAnswers,
+        quizSessionId,
+        setQuizSessionId,
+        currentVideoInfo,
+        setCurrentVideoInfo,
         resetQuiz,
       }}
     >

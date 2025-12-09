@@ -1,104 +1,104 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { History, ChevronRight, Trophy, Clock, CheckCircle2, XCircle, User, X, PanelLeft, BookOpen, Menu } from 'lucide-react';
+import { History, ChevronRight, Trophy, Clock, CheckCircle2, XCircle, User, X, PanelLeft, BookOpen, Menu, Loader2 } from 'lucide-react';
 import { Card } from './Card';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter } from 'next/navigation';
 import { getUser } from '@/app/actions/auth';
 import { LogoutButton } from './LogoutButton';
+import { getQuizSessions } from '@/app/actions/quiz';
+import { useQuiz } from '@/context/QuizContext';
+import { getModeStyle, getScoreColor } from '@/lib/quiz-helpers';
+import { HISTORY_LIMITS } from '@/lib/constants';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
-interface TestHistory {
+interface QuizSession {
   id: string;
-  title: string;
-  date: string;
-  score: number;
-  totalQuestions: number;
-  mode: 'nob' | 'legend';
-  duration: string;
-  status: 'completed' | 'failed';
+  video_id: string;
+  video_title: string;
+  video_url: string;
+  video_thumbnail: string | null;
+  video_channel: string | null;
+  video_duration: string | null;
+  quiz_mode: string;
+  questions: any;
+  created_at: string;
+  latest_result?: {
+    id: string;
+    score: number;
+    total_questions: number;
+    user_answers: any;
+    created_at: string;
+  } | null;
 }
-
-// Mock data untuk history
-const mockHistory: TestHistory[] = [
-  {
-    id: '1',
-    title: 'Pengenalan React Hooks',
-    date: '2024-12-04',
-    score: 8,
-    totalQuestions: 10,
-    mode: 'nob',
-    duration: '15 menit',
-    status: 'completed'
-  },
-  {
-    id: '2',
-    title: 'JavaScript ES6 Features',
-    date: '2024-12-03',
-    score: 6,
-    totalQuestions: 10,
-    mode: 'legend',
-    duration: '20 menit',
-    status: 'completed'
-  },
-  {
-    id: '3',
-    title: 'CSS Flexbox & Grid',
-    date: '2024-12-02',
-    score: 4,
-    totalQuestions: 10,
-    mode: 'nob',
-    duration: '12 menit',
-    status: 'failed'
-  },
-  {
-    id: '4',
-    title: 'TypeScript Basics',
-    date: '2024-12-01',
-    score: 9,
-    totalQuestions: 10,
-    mode: 'legend',
-    duration: '18 menit',
-    status: 'completed'
-  },
-  {
-    id: '5',
-    title: 'Next.js App Router',
-    date: '2024-11-30',
-    score: 7,
-    totalQuestions: 10,
-    mode: 'nob',
-    duration: '16 menit',
-    status: 'completed'
-  },
-];
 
 export const Sidebar = () => {
   const { isSidebarOpen, toggleSidebar } = useLayout();
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [quizSessions, setQuizSessions] = useState<QuizSession[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { setGeneratedQuiz, setQuizMode, setCurrentQuestionIdx, setScore, setSelectedAnswer, setIsAnswered, setUserAnswers, setCurrentVideoInfo } = useQuiz();
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const fetchData = async () => {
       const userData = await getUser();
       setUser(userData);
+      
+      if (userData) {
+        try {
+          const { data } = await getQuizSessions(HISTORY_LIMITS.DEFAULT_SESSIONS);
+          setQuizSessions(data || []);
+        } catch (error) {
+          console.error('Error fetching quiz sessions:', error);
+        } finally {
+          setLoading(false);
+        }
+      }
     };
-    fetchUser();
+    fetchData();
   }, []);
 
-  const getScoreColor = (score: number, total: number) => {
-    const percentage = (score / total) * 100;
-    if (percentage >= 80) return 'text-green-600';
-    if (percentage >= 60) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getModeStyle = (mode: 'nob' | 'legend') => {
-    return mode === 'nob' 
-      ? 'bg-sky-100 text-sky-700' 
-      : 'bg-gradient-to-r from-orange-100 to-red-100 text-orange-700';
+  const handleLoadQuizSession = async (session: QuizSession) => {
+    try {
+      // Parse questions from JSONB
+      const questions = session.questions;
+      
+      // Set quiz data to context
+      setGeneratedQuiz(questions);
+      setQuizMode(session.quiz_mode as 'nob' | 'legend');
+      
+      // Set current video info for saving results
+      setCurrentVideoInfo({
+        videoId: session.video_id,
+        videoTitle: session.video_title,
+        videoUrl: session.video_url,
+      });
+      
+      // If already completed, navigate to review page
+      if (session.latest_result) {
+        setScore(session.latest_result.score);
+        setUserAnswers(session.latest_result.user_answers);
+        router.push('/quiz/review');
+      } else {
+        // Start new quiz
+        setCurrentQuestionIdx(0);
+        setScore(0);
+        setSelectedAnswer(null);
+        setIsAnswered(false);
+        setUserAnswers(new Array(questions.length).fill(null));
+        router.push('/quiz');
+      }
+      
+      // Close sidebar on mobile
+      if (window.innerWidth < 1024) {
+        toggleSidebar();
+      }
+    } catch (error) {
+      console.error('Error loading quiz session:', error);
+    }
   };
 
   return (
@@ -158,8 +158,8 @@ export const Sidebar = () => {
             {!isSidebarOpen && (
               <div className="flex flex-col items-center gap-3 mt-2">
                 <div className="text-center">
-                  <div className="text-xs font-bold text-green-600">{mockHistory.length}</div>
-                  <div className="text-[10px] text-slate-400">Tests</div>
+                  <div className="text-xs font-bold text-green-600">{quizSessions.length}</div>
+                  <div className="text-[10px] text-slate-400">Quiz</div>
                 </div>
               </div>
             )}
@@ -209,21 +209,15 @@ export const Sidebar = () => {
 
           {/* Stats Summary */}
           <div className="p-4 bg-white border-b border-slate-100">
-            <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="grid grid-cols-2 gap-2 text-center">
               <div className="bg-green-50 rounded-lg p-2">
-                <p className="text-xs text-green-600 font-medium">Total</p>
-                <p className="text-lg font-bold text-green-700">{mockHistory.length}</p>
+                <p className="text-xs text-green-600 font-medium">Total Quiz</p>
+                <p className="text-lg font-bold text-green-700">{quizSessions.length}</p>
               </div>
               <div className="bg-blue-50 rounded-lg p-2">
-                <p className="text-xs text-blue-600 font-medium">Lulus</p>
+                <p className="text-xs text-blue-600 font-medium">NOB</p>
                 <p className="text-lg font-bold text-blue-700">
-                  {mockHistory.filter(h => h.status === 'completed').length}
-                </p>
-              </div>
-              <div className="bg-amber-50 rounded-lg p-2">
-                <p className="text-xs text-amber-600 font-medium">Avg</p>
-                <p className="text-lg font-bold text-amber-700">
-                  {Math.round(mockHistory.reduce((acc, h) => acc + (h.score / h.totalQuestions * 100), 0) / mockHistory.length)}%
+                  {quizSessions.filter(s => s.quiz_mode === 'nob').length}
                 </p>
               </div>
             </div>
@@ -231,59 +225,80 @@ export const Sidebar = () => {
 
           {/* History List */}
           <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {mockHistory.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-12">
+                <Loader2 className="mx-auto text-indigo-600 mb-3 animate-spin" size={32} />
+                <p className="text-slate-400 text-sm">Memuat history...</p>
+              </div>
+            ) : quizSessions.length === 0 ? (
               <div className="text-center py-12">
                 <Trophy className="mx-auto text-slate-300 mb-3" size={48} />
-                <p className="text-slate-400 text-sm">Belum ada riwayat test</p>
+                <p className="text-slate-400 text-sm">Belum ada quiz tersimpan</p>
+                <p className="text-slate-300 text-xs mt-1">Buat quiz pertamamu!</p>
               </div>
             ) : (
-              mockHistory.map((item) => (
-                <Card key={item.id} className="p-3 hover:shadow-lg hover:border-indigo-200 transition-all cursor-pointer group">
-                  <div className="space-y-2">
+              quizSessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => handleLoadQuizSession(session)}
+                  className="w-full text-left"
+                >
+                  <Card className="p-3 hover:shadow-lg hover:border-indigo-200 transition-all cursor-pointer group">
+                    <div className="space-y-2">
                     {/* Title & Status */}
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold text-slate-800 text-xs lg:text-sm leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">
-                        {item.title}
+                        {session.video_title}
                       </h3>
-                      {item.status === 'completed' ? (
+                      {session.latest_result && (
                         <CheckCircle2 className="text-green-500 flex-shrink-0 w-3 h-3 lg:w-4 lg:h-4" />
-                      ) : (
-                        <XCircle className="text-red-500 flex-shrink-0 w-3 h-3 lg:w-4 lg:h-4" />
                       )}
                     </div>
 
-                    {/* Score */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-[10px] lg:text-xs text-slate-500">Skor</span>
-                      <span className={`text-sm lg:text-base font-bold ${getScoreColor(item.score, item.totalQuestions)}`}>
-                        {item.score}/{item.totalQuestions}
-                      </span>
-                    </div>
+                    {/* Channel */}
+                    {session.video_channel && (
+                      <p className="text-[10px] text-slate-500 truncate">
+                        {session.video_channel}
+                      </p>
+                    )}
 
-                    {/* Mode & Duration */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className={`px-2 py-0.5 rounded-full font-medium ${getModeStyle(item.mode)}`}>
-                        {item.mode === 'nob' ? 'Noob' : 'Legend'}
-                      </span>
-                      <div className="flex items-center gap-1 text-slate-500">
-                        <Clock size={12} />
-                        <span>{item.duration}</span>
+                    {/* Score (if completed) */}
+                    {session.latest_result && (
+                      <div className="flex items-center justify-between bg-slate-50 rounded-lg px-2 py-1">
+                        <span className="text-[10px] lg:text-xs text-slate-500">Skor Terakhir</span>
+                        <span className={`text-sm lg:text-base font-bold ${getScoreColor(session.latest_result.score, session.latest_result.total_questions)}`}>
+                          {session.latest_result.score}/{session.latest_result.total_questions}
+                        </span>
                       </div>
+                    )}
+
+                    {/* Mode & Questions Count */}
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className={`px-2 py-0.5 rounded-full font-medium ${getModeStyle(session.quiz_mode)}`}>
+                        {session.quiz_mode === 'nob' ? 'NOB' : 'Legend'}
+                      </span>
+                      <span className="text-slate-500">
+                        {Array.isArray(session.questions) ? session.questions.length : 0} soal
+                      </span>
                     </div>
 
-                    {/* Date */}
+                    {/* Date & Action */}
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                       <span className="text-xs text-slate-400">
-                        {new Date(item.date).toLocaleDateString('id-ID', {
+                        {new Date(session.created_at).toLocaleDateString('id-ID', {
                           day: 'numeric',
                           month: 'short',
                           year: 'numeric'
                         })}
                       </span>
-                      <ChevronRight className="text-slate-300 group-hover:text-indigo-600 transition-colors" size={14} />
+                      <div className="flex items-center gap-1 text-xs text-indigo-600 font-medium">
+                        {session.latest_result ? 'Lihat Review' : 'Mulai Quiz'}
+                        <ChevronRight className="text-slate-300 group-hover:text-indigo-600 transition-colors" size={14} />
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                    </div>
+                  </Card>
+                </button>
               ))
             )}
           </div>

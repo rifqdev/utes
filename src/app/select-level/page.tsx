@@ -1,15 +1,35 @@
 'use client';
 
-import { Gamepad2, Flame, ChevronRight } from 'lucide-react';
+import { Gamepad2, Flame, ChevronRight, Loader2 } from 'lucide-react';
 import { AppLayout } from '@/components/AppLayout';
 import { useQuiz } from '@/context/QuizContext';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { generateQuizFromTranscript } from '@/app/actions/openai';
+import { saveQuizSession } from '@/app/actions/quiz';
+import { QUIZ_DEFAULTS } from '@/lib/constants';
 
 export default function SelectLevelPage() {
-  const { setQuizMode, setCurrentQuestionIdx, setScore, setSelectedAnswer, setIsAnswered, setEssayAnswer, setEssayFeedbackMode } = useQuiz();
+  const { 
+    setQuizMode, 
+    setCurrentQuestionIdx, 
+    setScore, 
+    setSelectedAnswer, 
+    setIsAnswered, 
+    setEssayAnswer, 
+    setEssayFeedbackMode,
+    youtubeTranscript,
+    youtubeMetadata,
+    inputUrl,
+    setGeneratedQuiz,
+    setQuizSessionId,
+    setCurrentVideoInfo
+  } = useQuiz();
   const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLevelSelect = (mode: 'nob' | 'legend') => {
+  const handleLevelSelect = async (mode: 'nob' | 'legend') => {
     setQuizMode(mode);
     setCurrentQuestionIdx(0);
     setScore(0);
@@ -19,7 +39,53 @@ export default function SelectLevelPage() {
     setEssayFeedbackMode(false);
     
     if (mode === 'nob') {
-      router.push('/quiz');
+      // Generate quiz menggunakan OpenAI
+      if (!youtubeTranscript?.text) {
+        setError('Transkrip tidak tersedia. Silakan coba lagi.');
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const quiz = await generateQuizFromTranscript(
+          youtubeTranscript.text,
+          QUIZ_DEFAULTS.NUMBER_OF_QUESTIONS
+        );
+        setGeneratedQuiz(quiz);
+
+        // Save quiz session to database
+        const sessionResult = await saveQuizSession({
+          videoId: youtubeMetadata?.videoId || '',
+          videoTitle: youtubeMetadata?.title || '',
+          videoUrl: inputUrl,
+          videoThumbnail: youtubeMetadata?.thumbnail,
+          videoChannel: youtubeMetadata?.channel,
+          videoDuration: youtubeMetadata?.duration,
+          quizMode: 'nob',
+          questions: quiz,
+          transcriptText: youtubeTranscript.text,
+        });
+
+        // Save session ID and video info to context
+        if (sessionResult.data?.id) {
+          setQuizSessionId(sessionResult.data.id);
+        }
+        
+        setCurrentVideoInfo({
+          videoId: youtubeMetadata?.videoId || '',
+          videoTitle: youtubeMetadata?.title || '',
+          videoUrl: inputUrl,
+        });
+
+        router.push('/quiz');
+      } catch (err) {
+        console.error(err);
+        setError('Gagal membuat soal latihan. Silakan coba lagi.');
+      } finally {
+        setLoading(false);
+      }
     } else {
       router.push('/essay');
     }
@@ -33,7 +99,22 @@ export default function SelectLevelPage() {
         <p className="text-slate-600 text-sm lg:text-base">Seberapa dalam kamu ingin menguji pemahamanmu?</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <Loader2 className="w-12 h-12 text-sky-600 animate-spin" />
+          <p className="text-slate-600 font-medium">Sedang membuat soal latihan...</p>
+          <p className="text-slate-500 text-sm">Mohon tunggu sebentar</p>
+        </div>
+      )}
+
+      {!loading && (
+        <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
         <button 
           onClick={() => handleLevelSelect('nob')}
           className="relative group bg-white p-4 lg:p-6 rounded-3xl border-2 border-slate-100 hover:border-sky-400 hover:shadow-xl hover:shadow-sky-100 transition-all text-left flex flex-col h-full"
@@ -74,6 +155,7 @@ export default function SelectLevelPage() {
           </div>
         </button>
       </div>
+      )}
     </div>
     </AppLayout>
   );

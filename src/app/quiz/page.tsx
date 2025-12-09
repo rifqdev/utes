@@ -1,11 +1,14 @@
 'use client';
 
-import { Gamepad2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { Gamepad2, CheckCircle2, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { AppLayout } from '@/components/AppLayout';
 import { useQuiz } from '@/context/QuizContext';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { saveQuizResult } from '@/app/actions/quiz';
+import { getVideoInfo, getOptionClassName } from '@/lib/quiz-helpers';
 
 export default function QuizPage() {
   const {
@@ -18,8 +21,22 @@ export default function QuizPage() {
     score,
     setScore,
     setCurrentQuestionIdx,
+    userAnswers,
+    setUserAnswers,
+    youtubeMetadata,
+    inputUrl,
+    quizMode,
+    currentVideoInfo,
   } = useQuiz();
   const router = useRouter();
+  const [saving, setSaving] = useState(false);
+
+  // Initialize userAnswers array
+  useEffect(() => {
+    if (userAnswers.length === 0 && activeQuiz.length > 0) {
+      setUserAnswers(new Array(activeQuiz.length).fill(null));
+    }
+  }, [activeQuiz.length, userAnswers.length, setUserAnswers]);
 
   const question = activeQuiz[currentQuestionIdx];
   const progressPercent = ((currentQuestionIdx + 1) / activeQuiz.length) * 100;
@@ -28,18 +45,49 @@ export default function QuizPage() {
     if (isAnswered) return;
     setSelectedAnswer(idx);
     setIsAnswered(true);
+    
+    // Save user answer
+    const newAnswers = [...userAnswers];
+    newAnswers[currentQuestionIdx] = idx;
+    setUserAnswers(newAnswers);
+    
     if (idx === question.correct) {
       setScore(s => s + 1);
     }
   };
 
-  const nextQuestion = () => {
+  const nextQuestion = async () => {
     if (currentQuestionIdx < activeQuiz.length - 1) {
       setCurrentQuestionIdx(currentQuestionIdx + 1);
       setSelectedAnswer(null);
       setIsAnswered(false);
     } else {
-      router.push('/result');
+      // Last question - save to database
+      setSaving(true);
+      try {
+        // Get video info from either youtubeMetadata or currentVideoInfo (from history)
+        const videoInfo = getVideoInfo(youtubeMetadata, inputUrl, currentVideoInfo);
+
+        if (videoInfo) {
+          await saveQuizResult({
+            videoId: videoInfo.videoId,
+            videoTitle: videoInfo.videoTitle,
+            videoUrl: videoInfo.videoUrl,
+            quizMode: quizMode,
+            score: score,
+            totalQuestions: activeQuiz.length,
+            questions: activeQuiz,
+            userAnswers: userAnswers,
+          });
+        }
+        router.push('/result');
+      } catch (error) {
+        console.error('Error saving quiz result:', error);
+        // Still navigate to result page even if save fails
+        router.push('/result');
+      } finally {
+        setSaving(false);
+      }
     }
   };
 
@@ -68,23 +116,7 @@ export default function QuizPage() {
 
         <div className="space-y-3 mb-6 lg:mb-8">
           {question.options.map((opt: string, idx: number) => {
-            let btnClass = "w-full p-3 lg:p-4 text-left rounded-xl border-2 transition-all duration-200 flex items-center justify-between group text-sm lg:text-base ";
-            
-            if (isAnswered) {
-              if (idx === question.correct) {
-                btnClass += "border-green-500 bg-green-50 text-green-800";
-              } else if (idx === selectedAnswer) {
-                btnClass += "border-red-500 bg-red-50 text-red-800";
-              } else {
-                btnClass += "border-slate-100 text-slate-400 opacity-50";
-              }
-            } else {
-              if (selectedAnswer === idx) {
-                btnClass += "border-sky-600 bg-sky-50 text-sky-900";
-              } else {
-                btnClass += "border-slate-100 text-slate-700 hover:border-sky-200 hover:bg-slate-50";
-              }
-            }
+            const btnClass = getOptionClassName(idx, question.correct, selectedAnswer, isAnswered);
 
             return (
               <button 
@@ -105,11 +137,11 @@ export default function QuizPage() {
            <Button 
               onClick={nextQuestion} 
               variant="nob"
-              disabled={!isAnswered}
-              className={!isAnswered ? "opacity-50 cursor-not-allowed bg-slate-300" : ""}
-              icon={ArrowRight}
+              disabled={!isAnswered || saving}
+              className={(!isAnswered || saving) ? "opacity-50 cursor-not-allowed bg-slate-300" : ""}
+              icon={saving ? Loader2 : ArrowRight}
            >
-             {currentQuestionIdx === activeQuiz.length - 1 ? 'Lihat Hasil' : 'Selanjutnya'}
+             {saving ? 'Menyimpan...' : (currentQuestionIdx === activeQuiz.length - 1 ? 'Lihat Hasil' : 'Selanjutnya')}
            </Button>
         </div>
       </Card>

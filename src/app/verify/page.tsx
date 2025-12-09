@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
 import { getYouTubeMetadata, getYouTubeTranscript } from '@/app/actions/youtube';
 
 export default function VerifyPage() {
-  const { inputUrl, setIsFullVideo, youtubeMetadata, setYoutubeMetadata, setYoutubeTranscript } = useQuiz();
+  const { inputUrl, setIsFullVideo, youtubeMetadata, setYoutubeMetadata, setYoutubeTranscript, youtubeTranscript } = useQuiz();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +33,11 @@ export default function VerifyPage() {
 
         if (!metadata) {
           setError('URL tidak valid atau video tidak ditemukan.');
+          return;
+        }
+
+        if (!transcript) {
+          setError('Transkrip tidak tersedia untuk video ini. Pastikan video memiliki subtitle/caption.');
           return;
         }
 
@@ -133,6 +138,7 @@ export default function VerifyPage() {
           <Button 
             onClick={handleFullVideo}
             className="w-full justify-center"
+            disabled={!youtubeTranscript}
           >
             Ya, Sudah Selesai
           </Button>
@@ -140,10 +146,16 @@ export default function VerifyPage() {
             variant="secondary"
             onClick={handlePartialVideo}
             className="w-full justify-center"
+            disabled={!youtubeTranscript}
           >
             Belum Selesai
           </Button>
         </div>
+        {!youtubeTranscript && (
+          <p className="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg">
+            ⚠️ Transkrip tidak tersedia untuk video ini
+          </p>
+        )}
       </div>
     </div>
     </AppLayout>
