@@ -6,7 +6,7 @@ import { CompletionBadge } from '@/components/CompletionBadge';
 import { useQuiz } from '@/context/QuizContext';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { generateQuizFromTranscript } from '@/app/actions/openai';
+import { generateQuizFromTranscript, generateEssayFromTranscript } from '@/app/actions/openai';
 import { saveQuizSession } from '@/app/actions/quiz';
 import { QUIZ_DEFAULTS } from '@/lib/constants';
 
@@ -25,7 +25,10 @@ export default function SelectLevelPage() {
     setGeneratedQuiz,
     setQuizSessionId,
     setCurrentVideoInfo,
-    videoCompletionStatus
+    videoCompletionStatus,
+    setGeneratedEssay,
+    setEssayAnswers,
+    setEssayScores,
   } = useQuiz();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -88,8 +91,58 @@ export default function SelectLevelPage() {
       } finally {
         setLoading(false);
       }
-    } else {
-      router.push('/essay');
+    } else if (mode === 'legend') {
+      // Generate essay questions menggunakan OpenAI
+      if (!youtubeTranscript?.text) {
+        setError('Transkrip tidak tersedia. Silakan coba lagi.');
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const essayQuestions = await generateEssayFromTranscript(
+          youtubeTranscript.text,
+          QUIZ_DEFAULTS.ESSAY_QUESTIONS
+        );
+        setGeneratedEssay(essayQuestions);
+
+        // Save quiz session to database
+        const sessionResult = await saveQuizSession({
+          videoId: youtubeMetadata?.videoId || '',
+          videoTitle: youtubeMetadata?.title || '',
+          videoUrl: inputUrl,
+          videoThumbnail: youtubeMetadata?.thumbnail,
+          videoChannel: youtubeMetadata?.channel,
+          videoDuration: youtubeMetadata?.duration,
+          quizMode: 'legend',
+          questions: essayQuestions,
+          transcriptText: youtubeTranscript.text,
+        });
+
+        // Save session ID and video info to context
+        if (sessionResult.data?.id) {
+          setQuizSessionId(sessionResult.data.id);
+        }
+        
+        setCurrentVideoInfo({
+          videoId: youtubeMetadata?.videoId || '',
+          videoTitle: youtubeMetadata?.title || '',
+          videoUrl: inputUrl,
+        });
+
+        // Initialize essay answers and scores
+        setEssayAnswers(new Array(essayQuestions.length).fill(''));
+        setEssayScores(new Array(essayQuestions.length).fill(null));
+
+        router.push('/essay');
+      } catch (err) {
+        console.error(err);
+        setError('Gagal membuat soal essay. Silakan coba lagi.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

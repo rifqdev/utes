@@ -41,6 +41,13 @@ export default function QuizPage() {
   const question = activeQuiz[currentQuestionIdx];
   const progressPercent = ((currentQuestionIdx + 1) / activeQuiz.length) * 100;
 
+  // Redirect if no quiz data or if it's essay data (no options)
+  useEffect(() => {
+    if (activeQuiz.length === 0 || !question?.options) {
+      router.push('/app');
+    }
+  }, [activeQuiz, question, router]);
+
   const handleAnswer = (idx: number) => {
     if (isAnswered) return;
     setSelectedAnswer(idx);
@@ -115,7 +122,7 @@ export default function QuizPage() {
         </h3>
 
         <div className="space-y-3 mb-6 lg:mb-8">
-          {question.options.map((opt: string, idx: number) => {
+          {question.options?.map((opt: string, idx: number) => {
             const btnClass = getOptionClassName(idx, question.correct, selectedAnswer, isAnswered);
 
             return (

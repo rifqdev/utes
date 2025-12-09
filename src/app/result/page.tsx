@@ -5,6 +5,7 @@ import { Button } from '@/components/Button';
 import { AppLayout } from '@/components/AppLayout';
 import { useQuiz } from '@/context/QuizContext';
 import { useRouter } from 'next/navigation';
+import { QUIZ_MODES } from '@/lib/constants';
 
 export default function ResultPage() {
   const { 
@@ -13,27 +14,26 @@ export default function ResultPage() {
     activeQuiz, 
     activeEssay,
     resetQuiz,
-    setQuizMode,
     setCurrentQuestionIdx,
     setScore,
-    setSelectedAnswer,
-    setIsAnswered,
-    setEssayAnswer,
-    setEssayFeedbackMode,
-    setUserAnswers,
+    resetQuizState,
+    resetEssayState,
   } = useQuiz();
   const router = useRouter();
 
-  const totalQuestions = quizMode === 'nob' ? activeQuiz.length : activeEssay.length;
-  const percentage = Math.round((score / totalQuestions) * 100);
+  const totalQuestions = quizMode === QUIZ_MODES.NOB ? activeQuiz.length : activeEssay.length;
+  
+  // For legend mode, score is already the average (0-100)
+  // For nob mode, calculate percentage from correct answers
+  const percentage = quizMode === QUIZ_MODES.LEGEND ? score : Math.round((score / totalQuestions) * 100);
   
   let message = "";
   let color = "";
   let bgIcon = "";
 
   if (percentage === 100) {
-    message = quizMode === 'nob' ? "Nob Master!" : "Absolute Legend!";
-    color = quizMode === 'nob' ? "text-sky-600" : "text-orange-600";
+    message = quizMode === QUIZ_MODES.NOB ? "Nob Master!" : "Absolute Legend!";
+    color = quizMode === QUIZ_MODES.NOB ? "text-sky-600" : "text-orange-600";
     bgIcon = "bg-yellow-400";
   } else if (percentage >= 70) {
     message = "Hebat!";
@@ -48,15 +48,12 @@ export default function ResultPage() {
   const handleTryAgain = () => {
     setCurrentQuestionIdx(0);
     setScore(0);
-    setSelectedAnswer(null);
-    setIsAnswered(false);
-    setEssayAnswer('');
-    setEssayFeedbackMode(false);
-    setUserAnswers(new Array(activeQuiz.length).fill(null));
     
-    if (quizMode === 'nob') {
+    if (quizMode === QUIZ_MODES.NOB) {
+      resetQuizState(activeQuiz.length);
       router.push('/quiz');
     } else {
+      resetEssayState(activeEssay.length);
       router.push('/essay');
     }
   };
@@ -76,8 +73,17 @@ export default function ResultPage() {
       <div className="relative inline-block">
         <div className="w-40 h-40 lg:w-48 lg:h-48 rounded-full border-8 border-slate-100 flex items-center justify-center bg-white shadow-xl">
           <div>
-            <span className={`text-4xl lg:text-5xl font-bold block ${color}`}>{score}/{totalQuestions}</span>
-            <span className="text-slate-400 text-xs lg:text-sm font-medium">Benar</span>
+            {quizMode === QUIZ_MODES.NOB ? (
+              <>
+                <span className={`text-4xl lg:text-5xl font-bold block ${color}`}>{score}/{totalQuestions}</span>
+                <span className="text-slate-400 text-xs lg:text-sm font-medium">Benar</span>
+              </>
+            ) : (
+              <>
+                <span className={`text-4xl lg:text-5xl font-bold block ${color}`}>{score}</span>
+                <span className="text-slate-400 text-xs lg:text-sm font-medium">Skor Rata-rata</span>
+              </>
+            )}
           </div>
         </div>
         <div className={`absolute -bottom-2 -right-2 ${bgIcon} p-3 rounded-full text-white shadow-lg`}>
@@ -89,8 +95,8 @@ export default function ResultPage() {
         <h2 className={`text-xl lg:text-2xl font-bold ${color}`}>{message}</h2>
         <p className="text-slate-500 text-sm lg:text-base">
           Kamu menyelesaikan latihan level 
-          <span className={`font-bold mx-1 ${quizMode === 'nob' ? 'text-sky-600' : 'text-orange-600'}`}>
-            {quizMode === 'nob' ? 'NOB' : 'LEGEND'}
+          <span className={`font-bold mx-1 ${quizMode === QUIZ_MODES.NOB ? 'text-sky-600' : 'text-orange-600'}`}>
+            {quizMode === QUIZ_MODES.NOB ? 'NOB' : 'LEGEND'}
           </span>
           untuk materi ini.
         </p>

@@ -10,7 +10,7 @@ import { LogoutButton } from './LogoutButton';
 import { getQuizSessions } from '@/app/actions/quiz';
 import { useQuiz } from '@/context/QuizContext';
 import { getModeStyle, getScoreColor } from '@/lib/quiz-helpers';
-import { HISTORY_LIMITS } from '@/lib/constants';
+import { HISTORY_LIMITS, QUIZ_MODES } from '@/lib/constants';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface QuizSession {
@@ -29,6 +29,8 @@ interface QuizSession {
     score: number;
     total_questions: number;
     user_answers: any;
+    essay_scores?: any;
+    essay_feedbacks?: any;
     created_at: string;
   } | null;
 }
@@ -40,7 +42,22 @@ export const Sidebar = () => {
   const [quizSessions, setQuizSessions] = useState<QuizSession[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
-  const { setGeneratedQuiz, setQuizMode, setCurrentQuestionIdx, setScore, setSelectedAnswer, setIsAnswered, setUserAnswers, setCurrentVideoInfo } = useQuiz();
+  const { 
+    setGeneratedQuiz, 
+    setQuizMode, 
+    setCurrentQuestionIdx, 
+    setScore, 
+    setUserAnswers, 
+    setCurrentVideoInfo,
+    setGeneratedEssay,
+    setEssayAnswers,
+    setEssayScores,
+    setEssayFeedbacks,
+    resetEssayState,
+    resetQuizState,
+    clearQuizData,
+    clearEssayData,
+  } = useQuiz();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -63,33 +80,50 @@ export const Sidebar = () => {
 
   const handleLoadQuizSession = async (session: QuizSession) => {
     try {
-      // Parse questions from JSONB
       const questions = session.questions;
+      const isLegend = session.quiz_mode === QUIZ_MODES.LEGEND;
       
-      // Set quiz data to context
-      setGeneratedQuiz(questions);
+      // Set common state
       setQuizMode(session.quiz_mode as 'nob' | 'legend');
-      
-      // Set current video info for saving results
       setCurrentVideoInfo({
         videoId: session.video_id,
         videoTitle: session.video_title,
         videoUrl: session.video_url,
       });
       
-      // If already completed, navigate to review page
+      // Load completed session for review
       if (session.latest_result) {
         setScore(session.latest_result.score);
-        setUserAnswers(session.latest_result.user_answers);
-        router.push('/quiz/review');
+        
+        if (isLegend) {
+          setGeneratedEssay(questions);
+          clearQuizData();
+          setEssayAnswers(session.latest_result.user_answers);
+          setEssayScores(session.latest_result.essay_scores || []);
+          setEssayFeedbacks(session.latest_result.essay_feedbacks || []);
+          router.push('/essay/review');
+        } else {
+          setGeneratedQuiz(questions);
+          clearEssayData();
+          setUserAnswers(session.latest_result.user_answers);
+          router.push('/quiz/review');
+        }
       } else {
-        // Start new quiz
+        // Start new quiz session
         setCurrentQuestionIdx(0);
         setScore(0);
-        setSelectedAnswer(null);
-        setIsAnswered(false);
-        setUserAnswers(new Array(questions.length).fill(null));
-        router.push('/quiz');
+        
+        if (isLegend) {
+          setGeneratedEssay(questions);
+          clearQuizData();
+          resetEssayState(questions.length);
+          router.push('/essay');
+        } else {
+          setGeneratedQuiz(questions);
+          clearEssayData();
+          resetQuizState(questions.length);
+          router.push('/quiz');
+        }
       }
       
       // Close sidebar on mobile
@@ -217,7 +251,7 @@ export const Sidebar = () => {
               <div className="bg-blue-50 rounded-lg p-2">
                 <p className="text-xs text-blue-600 font-medium">NOB</p>
                 <p className="text-lg font-bold text-blue-700">
-                  {quizSessions.filter(s => s.quiz_mode === 'nob').length}
+                  {quizSessions.filter(s => s.quiz_mode === QUIZ_MODES.NOB).length}
                 </p>
               </div>
             </div>
@@ -275,7 +309,7 @@ export const Sidebar = () => {
                     {/* Mode & Questions Count */}
                     <div className="flex items-center gap-2 text-xs">
                       <span className={`px-2 py-0.5 rounded-full font-medium ${getModeStyle(session.quiz_mode)}`}>
-                        {session.quiz_mode === 'nob' ? 'NOB' : 'Legend'}
+                        {session.quiz_mode === QUIZ_MODES.NOB ? 'NOB' : 'Legend'}
                       </span>
                       <span className="text-slate-500">
                         {Array.isArray(session.questions) ? session.questions.length : 0} soal

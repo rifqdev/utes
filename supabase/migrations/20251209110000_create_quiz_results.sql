@@ -10,6 +10,8 @@ CREATE TABLE IF NOT EXISTS public.quiz_results (
   total_questions INTEGER NOT NULL,
   questions JSONB NOT NULL,
   user_answers JSONB NOT NULL,
+  essay_scores JSONB,
+  essay_feedbacks JSONB,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

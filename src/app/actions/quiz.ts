@@ -3,12 +3,13 @@
 import { getAuthenticatedUser } from '@/lib/auth-helpers';
 import { getLatestResult } from '@/lib/quiz-helpers';
 import { QuizQuestion } from './openai';
+import { QuizMode, QUIZ_MODES } from '@/lib/constants';
 
 export interface SaveQuizResultParams {
   videoId: string;
   videoTitle: string;
   videoUrl: string;
-  quizMode: 'nob' | 'legend';
+  quizMode: QuizMode;
   score: number;
   totalQuestions: number;
   questions: QuizQuestion[];
@@ -22,7 +23,7 @@ export interface SaveQuizSessionParams {
   videoThumbnail?: string;
   videoChannel?: string;
   videoDuration?: string;
-  quizMode: 'nob' | 'legend';
+  quizMode: QuizMode;
   questions: QuizQuestion[];
   transcriptText?: string;
 }
@@ -224,8 +225,8 @@ export async function checkVideoCompletion(videoId: string): Promise<VideoComple
 
     if (error) throw error;
 
-    const nobResults = results?.filter(r => r.quiz_mode === 'nob') ?? [];
-    const legendResults = results?.filter(r => r.quiz_mode === 'legend') ?? [];
+    const nobResults = results?.filter(r => r.quiz_mode === QUIZ_MODES.NOB) ?? [];
+    const legendResults = results?.filter(r => r.quiz_mode === QUIZ_MODES.LEGEND) ?? [];
 
     return {
       hasNobQuiz: nobResults.length > 0,
@@ -237,6 +238,54 @@ export async function checkVideoCompletion(videoId: string): Promise<VideoComple
     };
   } catch (error) {
     console.error('Error checking video completion:', error);
+    throw error;
+  }
+}
+
+export interface SaveEssayResultParams {
+  videoId: string;
+  videoTitle: string;
+  videoUrl: string;
+  quizMode: typeof QUIZ_MODES.LEGEND;
+  score: number;
+  totalQuestions: number;
+  questions: any[];
+  userAnswers: string[];
+  essayScores: (number | null)[];
+  essayFeedbacks: string[];
+}
+
+export async function saveEssayResult(params: SaveEssayResultParams) {
+  try {
+    const { supabase, user } = await getAuthenticatedUser();
+
+    // Insert essay result
+    const { data, error } = await supabase
+      .from('quiz_results')
+      .insert({
+        user_id: user.id,
+        video_id: params.videoId,
+        video_title: params.videoTitle,
+        video_url: params.videoUrl,
+        quiz_mode: params.quizMode,
+        score: params.score,
+        total_questions: params.totalQuestions,
+        questions: params.questions as any,
+        user_answers: params.userAnswers as any,
+        essay_scores: params.essayScores as any,
+        essay_feedbacks: params.essayFeedbacks as any,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error saving essay result:', error);
+      throw new Error('Gagal menyimpan hasil essay');
+    }
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error in saveEssayResult:', error);
     throw error;
   }
 }

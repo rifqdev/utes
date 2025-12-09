@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { MOCK_QUIZ_FULL, MOCK_QUIZ_PARTIAL, MOCK_ESSAY_DATA } from '@/data/mockData';
 import { YouTubeMetadata, YouTubeTranscript } from '@/app/actions/youtube';
-import { QuizQuestion } from '@/app/actions/openai';
+import { QuizQuestion, EssayQuestion } from '@/app/actions/openai';
 import { VideoCompletionStatus } from '@/app/actions/quiz';
 
 interface QuizContextType {
@@ -39,6 +39,14 @@ interface QuizContextType {
   setGeneratedQuiz: (quiz: QuizQuestion[]) => void;
   userAnswers: (number | null)[];
   setUserAnswers: (answers: (number | null)[]) => void;
+  generatedEssay: EssayQuestion[];
+  setGeneratedEssay: (essay: EssayQuestion[]) => void;
+  essayAnswers: string[];
+  setEssayAnswers: (answers: string[]) => void;
+  essayScores: (number | null)[];
+  setEssayScores: (scores: (number | null)[]) => void;
+  essayFeedbacks: string[];
+  setEssayFeedbacks: (feedbacks: string[]) => void;
   quizSessionId: string | null;
   setQuizSessionId: (id: string | null) => void;
   currentVideoInfo: { videoId: string; videoTitle: string; videoUrl: string } | null;
@@ -46,6 +54,10 @@ interface QuizContextType {
   videoCompletionStatus: VideoCompletionStatus | null;
   setVideoCompletionStatus: (status: VideoCompletionStatus | null) => void;
   resetQuiz: () => void;
+  resetEssayState: (length: number) => void;
+  resetQuizState: (length: number) => void;
+  clearQuizData: () => void;
+  clearEssayData: () => void;
 }
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -69,9 +81,46 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
   const [currentVideoInfo, setCurrentVideoInfo] = useState<{ videoId: string; videoTitle: string; videoUrl: string } | null>(null);
   const [videoCompletionStatus, setVideoCompletionStatus] = useState<VideoCompletionStatus | null>(null);
+  const [generatedEssay, setGeneratedEssay] = useState<EssayQuestion[]>([]);
+  const [essayAnswers, setEssayAnswers] = useState<string[]>([]);
+  const [essayScores, setEssayScores] = useState<(number | null)[]>([]);
+  const [essayFeedbacks, setEssayFeedbacks] = useState<string[]>([]);
 
   const activeQuiz = generatedQuiz.length > 0 ? generatedQuiz : (isFullVideo ? MOCK_QUIZ_FULL : MOCK_QUIZ_PARTIAL);
-  const activeEssay = MOCK_ESSAY_DATA;
+  const activeEssay = generatedEssay.length > 0 ? generatedEssay : (MOCK_ESSAY_DATA as any);
+
+  // Helper: Reset essay state
+  const resetEssayState = (length: number) => {
+    setEssayAnswers(new Array(length).fill(''));
+    setEssayScores(new Array(length).fill(null));
+    setEssayFeedbacks(new Array(length).fill(''));
+    setEssayAnswer('');
+    setEssayFeedbackMode(false);
+  };
+
+  // Helper: Reset quiz state
+  const resetQuizState = (length: number) => {
+    setUserAnswers(new Array(length).fill(null));
+    setSelectedAnswer(null);
+    setIsAnswered(false);
+  };
+
+  // Helper: Clear mode-specific data
+  const clearQuizData = () => {
+    setGeneratedQuiz([]);
+    setUserAnswers([]);
+    setSelectedAnswer(null);
+    setIsAnswered(false);
+  };
+
+  const clearEssayData = () => {
+    setGeneratedEssay([]);
+    setEssayAnswers([]);
+    setEssayScores([]);
+    setEssayFeedbacks([]);
+    setEssayAnswer('');
+    setEssayFeedbackMode(false);
+  };
 
   const resetQuiz = () => {
     setInputUrl('');
@@ -80,18 +129,14 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     setProgressTime('');
     setProgressTopic('');
     setCurrentQuestionIdx(0);
-    setSelectedAnswer(null);
     setScore(0);
-    setIsAnswered(false);
-    setEssayAnswer('');
-    setEssayFeedbackMode(false);
     setYoutubeMetadata(null);
     setYoutubeTranscript(null);
-    setGeneratedQuiz([]);
-    setUserAnswers([]);
     setQuizSessionId(null);
     setCurrentVideoInfo(null);
     setVideoCompletionStatus(null);
+    clearQuizData();
+    clearEssayData();
   };
 
   return (
@@ -135,7 +180,19 @@ export function QuizProvider({ children }: { children: ReactNode }) {
         setCurrentVideoInfo,
         videoCompletionStatus,
         setVideoCompletionStatus,
+        generatedEssay,
+        setGeneratedEssay,
+        essayAnswers,
+        setEssayAnswers,
+        essayScores,
+        setEssayScores,
+        essayFeedbacks,
+        setEssayFeedbacks,
         resetQuiz,
+        resetEssayState,
+        resetQuizState,
+        clearQuizData,
+        clearEssayData,
       }}
     >
       {children}

@@ -71,11 +71,21 @@ export const MOCK_ESSAY_DATA = [
   {
     id: 1,
     question: "Jelaskan dengan kata-katamu sendiri apa itu Hoisting dalam JavaScript dan berikan contoh kasusnya!",
-    modelAnswer: "Hoisting adalah perilaku default JavaScript di mana deklarasi variabel dan fungsi dipindahkan ke bagian paling atas scope sebelum kode dieksekusi. Contoh: Kita bisa memanggil fungsi sebelum dideklarasikan."
+    referenceContext: "Hoisting adalah perilaku default JavaScript di mana deklarasi variabel dan fungsi dipindahkan ke bagian paling atas scope sebelum kode dieksekusi.",
+    keyPoints: [
+      "Hoisting memindahkan deklarasi ke atas scope",
+      "Fungsi bisa dipanggil sebelum dideklarasikan",
+      "Variabel dengan var di-hoist tapi nilainya undefined"
+    ]
   },
   {
     id: 2,
     question: "Mengapa kita sebaiknya menggunakan '===' daripada '==' saat melakukan perbandingan? Jelaskan risikonya.",
-    modelAnswer: "'===' mengecek nilai DAN tipe data (strict equality), sedangkan '==' hanya mengecek nilai dan melakukan type coercion (pengubahan tipe otomatis) yang bisa menyebabkan bug tak terduga."
+    referenceContext: "'===' adalah strict equality operator yang mengecek nilai dan tipe data, sedangkan '==' melakukan type coercion yang bisa menyebabkan hasil tidak terduga.",
+    keyPoints: [
+      "'===' mengecek nilai DAN tipe data",
+      "'==' melakukan type coercion otomatis",
+      "Type coercion bisa menyebabkan bug tak terduga"
+    ]
   }
 ];

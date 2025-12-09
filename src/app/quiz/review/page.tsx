@@ -36,11 +36,25 @@ export default function QuizReviewPage() {
   };
 
   useEffect(() => {
-    // Redirect if no quiz data
-    if (activeQuiz.length === 0 || userAnswers.length === 0) {
-      router.push('/app');
+    // Redirect legend to essay review page
+    if (quizMode === 'legend' && activeQuiz.length > 0) {
+      router.push('/essay/review');
     }
-  }, [activeQuiz, userAnswers, router]);
+  }, [quizMode, activeQuiz, router]);
+
+  // Show loading if data not ready yet
+  if (activeQuiz.length === 0 || userAnswers.length === 0) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto py-8 px-4 min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-slate-600">Memuat data...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   const totalQuestions = activeQuiz.length;
   const percentage = Math.round((score / totalQuestions) * 100);
@@ -115,7 +129,7 @@ export default function QuizReviewPage() {
 
                 {/* Options */}
                 <div className="space-y-2 ml-11">
-                  {question.options.map((option: string, optIndex: number) => {
+                  {question.options?.map((option: string, optIndex: number) => {
                     const isUserAnswer = userAnswer === optIndex;
                     const isCorrectAnswer = question.correct === optIndex;
                     const optionClass = getReviewOptionClassName(optIndex, question.correct, userAnswer, isCorrect);

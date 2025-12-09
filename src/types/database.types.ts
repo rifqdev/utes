@@ -73,6 +73,8 @@ export type Database = {
           total_questions: number
           questions: Json
           user_answers: Json
+          essay_scores: Json | null
+          essay_feedbacks: Json | null
           created_at: string
           updated_at: string
         }
@@ -87,6 +89,8 @@ export type Database = {
           total_questions: number
           questions: Json
           user_answers: Json
+          essay_scores?: Json | null
+          essay_feedbacks?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -101,6 +105,8 @@ export type Database = {
           total_questions?: number
           questions?: Json
           user_answers?: Json
+          essay_scores?: Json | null
+          essay_feedbacks?: Json | null
           created_at?: string
           updated_at?: string
         }
