@@ -31,9 +31,6 @@ export default function Home() {
       </p>
       
       <form onSubmit={handleSubmit} className="w-full relative group">
-        <div className="absolute inset-y-0 left-3 lg:left-4 flex items-center pointer-events-none text-slate-400">
-          <YoutubeIcon className="w-5 h-5 lg:w-6 lg:h-6" />
-        </div>
         <input 
           type="text" 
           placeholder="https://youtube.com/watch?v=..." 

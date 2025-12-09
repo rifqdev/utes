@@ -14,31 +14,20 @@ export default function AuthCallbackPage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Simulasi verifikasi magic link
-    const verifyMagicLink = async () => {
-      // Ambil token dari URL (simulasi)
-      const token = searchParams.get('token');
-      const type = searchParams.get('type');
-
-      // Simulasi delay verifikasi
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      // Simulasi verifikasi berhasil/gagal
-      if (token && type === 'magiclink') {
-        setStatus('success');
-        setMessage('Login berhasil! Mengalihkan...');
-        
-        // Redirect ke home setelah 2 detik
-        setTimeout(() => {
-          router.push('/');
-        }, 2000);
-      } else {
-        setStatus('error');
-        setMessage('Magic link tidak valid atau sudah kadaluarsa');
-      }
-    };
-
-    verifyMagicLink();
+    const error = searchParams.get('error');
+    
+    if (error) {
+      setStatus('error');
+      setMessage('Magic link tidak valid atau sudah kadaluarsa');
+    } else {
+      // Jika tidak ada error, berarti route handler sudah handle redirect
+      // Page ini hanya ditampilkan jika ada error
+      setStatus('success');
+      setMessage('Login berhasil! Mengalihkan...');
+      setTimeout(() => {
+        router.push('/app');
+      }, 1000);
+    }
   }, [searchParams, router]);
 
   return (

@@ -65,7 +65,7 @@ export default function ResultPage() {
 
   const handleNewVideo = () => {
     resetQuiz();
-    router.push('/');
+    router.push('/app');
   };
 
   return (

@@ -41,6 +41,17 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Redirect authenticated users away from auth pages
+  if (
+    user &&
+    (request.nextUrl.pathname.startsWith('/login') ||
+      request.nextUrl.pathname.startsWith('/verify'))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/app';
+    return NextResponse.redirect(url);
+  }
+
   // Protected routes - redirect ke login jika belum login
   if (
     !user &&

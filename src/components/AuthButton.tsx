@@ -1,30 +1,47 @@
 'use client';
 
-import { useState } from 'react';
-import { LogIn, LogOut, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { LogIn, User } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { User as SupabaseUser } from '@supabase/supabase-js';
+import { LogoutButton } from './LogoutButton';
 
 export const AuthButton = () => {
-  // Simulasi user state (nanti akan diganti dengan Supabase auth)
-  const [user, setUser] = useState<{ email: string } | null>({
-    email: 'user@example.com'
-  });
+  const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const supabase = createClient();
 
-  const handleLogin = () => {
-    router.push('/login');
-  };
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-  const handleLogout = () => {
-    // Simulasi logout
-    setUser(null);
-    router.push('/login');
-  };
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabase.auth]);
+
+  if (loading) {
+    return (
+      <div className="px-4 py-2 bg-slate-100 rounded-lg animate-pulse">
+        <div className="h-5 w-20 bg-slate-200 rounded"></div>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
       <button
-        onClick={handleLogin}
+        onClick={() => router.push('/login')}
         className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
       >
         <LogIn size={18} />
@@ -44,14 +61,7 @@ export const AuthButton = () => {
       </div>
 
       {/* Logout Button */}
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-all"
-        title="Logout"
-      >
-        <LogOut size={18} />
-        <span className="hidden sm:inline font-medium">Keluar</span>
-      </button>
+      <LogoutButton variant="icon" />
     </div>
   );
 };
