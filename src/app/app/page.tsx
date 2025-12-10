@@ -27,7 +27,7 @@ export default function Home() {
         <BookOpen className="w-8 h-8 lg:w-12 lg:h-12" />
       </div>
       <h1 className="text-2xl lg:text-4xl font-bold text-slate-900 tracking-tight">
-        Utes
+        UTES
       </h1>
       <p className="text-base lg:text-lg text-slate-600">
         Belajar otodidak jadi lebih efektif. Masukkan link video, kami buatkan latihan soal untukmu.

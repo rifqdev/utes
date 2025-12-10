@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { saveQuizResult } from '@/app/actions/quiz';
 import { getVideoInfo, getOptionClassName } from '@/lib/quiz-helpers';
+import { useLayout } from '@/context/LayoutContext';
 
 export default function QuizPage() {
   const {
@@ -28,6 +29,7 @@ export default function QuizPage() {
     quizMode,
     currentVideoInfo,
   } = useQuiz();
+  const { refreshHistory } = useLayout();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
 
@@ -86,6 +88,9 @@ export default function QuizPage() {
             questions: activeQuiz,
             userAnswers: userAnswers,
           });
+          
+          // Refresh history in sidebar
+          await refreshHistory();
         }
         router.push('/result');
       } catch (error) {

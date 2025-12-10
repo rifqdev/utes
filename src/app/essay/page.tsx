@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { analyzeEssayAnswer } from '@/app/actions/openai';
 import { saveEssayResult } from '@/app/actions/quiz';
 import { getVideoInfo } from '@/lib/quiz-helpers';
+import { useLayout } from '@/context/LayoutContext';
 
 export default function EssayPage() {
   const {
@@ -32,6 +33,7 @@ export default function EssayPage() {
     currentVideoInfo,
     resetEssayState,
   } = useQuiz();
+  const { refreshHistory } = useLayout();
   const router = useRouter();
   const [analyzing, setAnalyzing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -110,6 +112,9 @@ export default function EssayPage() {
             essayScores: essayScores,
             essayFeedbacks: essayFeedbacks,
           });
+          
+          // Refresh history in sidebar
+          await refreshHistory();
         }
         
         router.push('/result');

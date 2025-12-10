@@ -1,46 +1,21 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { History, ChevronRight, Trophy, Clock, CheckCircle2, XCircle, User, X, PanelLeft, BookOpen, Menu, Loader2 } from 'lucide-react';
+import { History, ChevronRight, Trophy, CheckCircle2, User, X, PanelLeft, BookOpen, Menu, Loader2, RefreshCw } from 'lucide-react';
 import { Card } from './Card';
 import { useLayout } from '@/context/LayoutContext';
 import { useRouter } from 'next/navigation';
 import { getUser } from '@/app/actions/auth';
 import { LogoutButton } from './LogoutButton';
-import { getQuizSessions } from '@/app/actions/quiz';
 import { useQuiz } from '@/context/QuizContext';
 import { getModeStyle, getScoreColor } from '@/lib/quiz-helpers';
-import { HISTORY_LIMITS, QUIZ_MODES } from '@/lib/constants';
-import type { User as SupabaseUser } from '@supabase/supabase-js';
-
-interface QuizSession {
-  id: string;
-  video_id: string;
-  video_title: string;
-  video_url: string;
-  video_thumbnail: string | null;
-  video_channel: string | null;
-  video_duration: string | null;
-  quiz_mode: string;
-  questions: any;
-  created_at: string;
-  latest_result?: {
-    id: string;
-    score: number;
-    total_questions: number;
-    user_answers: any;
-    essay_scores?: any;
-    essay_feedbacks?: any;
-    created_at: string;
-  } | null;
-}
+import { QUIZ_MODES } from '@/lib/constants';
+import type { QuizSession } from '@/context/LayoutContext';
 
 export const Sidebar = () => {
-  const { isSidebarOpen, toggleSidebar } = useLayout();
+  const { isSidebarOpen, toggleSidebar, quizSessions, loading, user, setUser, refreshHistory } = useLayout();
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [user, setUser] = useState<SupabaseUser | null>(null);
-  const [quizSessions, setQuizSessions] = useState<QuizSession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const router = useRouter();
   const { 
     setGeneratedQuiz, 
@@ -60,23 +35,16 @@ export const Sidebar = () => {
   } = useQuiz();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchUser = async () => {
       const userData = await getUser();
       setUser(userData);
-      
-      if (userData) {
-        try {
-          const { data } = await getQuizSessions(HISTORY_LIMITS.DEFAULT_SESSIONS);
-          setQuizSessions(data || []);
-        } catch (error) {
-          console.error('Error fetching quiz sessions:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
     };
-    fetchData();
-  }, []);
+    
+    // Only fetch user if not already set
+    if (!user) {
+      fetchUser();
+    }
+  }, [user, setUser]);
 
   const handleLoadQuizSession = async (session: QuizSession) => {
     try {
@@ -235,9 +203,25 @@ export const Sidebar = () => {
 
           {/* History Section Header */}
           <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-100">
-            <div className="flex items-center gap-2">
-              <History className="text-indigo-600 w-4 h-4 lg:w-[18px] lg:h-[18px]" />
-              <h2 className="text-xs lg:text-sm font-bold text-slate-800">History</h2>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <History className="text-indigo-600 w-4 h-4 lg:w-[18px] lg:h-[18px]" />
+                <h2 className="text-xs lg:text-sm font-bold text-slate-800">History</h2>
+              </div>
+              <button
+                onClick={async () => {
+                  setIsRefreshing(true);
+                  await refreshHistory();
+                  setIsRefreshing(false);
+                }}
+                disabled={isRefreshing || loading}
+                className="p-1.5 hover:bg-indigo-100 rounded-lg transition-colors disabled:opacity-50"
+                title="Refresh History"
+              >
+                <RefreshCw 
+                  className={`text-indigo-600 w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`}
+                />
+              </button>
             </div>
           </div>
 
