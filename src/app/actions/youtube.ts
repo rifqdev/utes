@@ -121,19 +121,45 @@ export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata |
     console.log(`[YouTube] Parsing metadata for ${videoId}`);
     
     // Ambil data dari basic_info
-    const basicInfo = info.basic_info as any;
+    let basicInfo = info.basic_info as any;
     
-    // Validate basic_info exists
-    if (!basicInfo) {
-      console.error('[YouTube] basic_info is null or undefined');
-      return null;
+    // Jika basic_info undefined (karena parser error), coba extract dari raw response
+    if (!basicInfo || !basicInfo.title) {
+      console.warn('[YouTube] basic_info is null/undefined or incomplete, trying fallback...');
+      
+      // Fallback: extract dari raw response
+      try {
+        const rawInfo = info as any;
+        const videoDetails = rawInfo.page?.[0]?.player?.videoDetails || 
+                           rawInfo.player_response?.videoDetails ||
+                           rawInfo.videoDetails;
+        
+        if (videoDetails) {
+          console.log('[YouTube] Using fallback videoDetails');
+          basicInfo = {
+            title: videoDetails.title,
+            author: videoDetails.author,
+            duration: parseInt(videoDetails.lengthSeconds) || 0,
+            thumbnail: videoDetails.thumbnail?.thumbnails,
+            short_description: videoDetails.shortDescription,
+            channel: {
+              name: videoDetails.author
+            }
+          };
+        } else {
+          console.error('[YouTube] No fallback data available');
+          return null;
+        }
+      } catch (fallbackError: any) {
+        console.error('[YouTube] Fallback extraction failed:', fallbackError.message);
+        return null;
+      }
     }
     
     // Debug: log raw data dengan detail
     console.log(`[YouTube] Raw title:`, JSON.stringify(basicInfo.title));
     console.log(`[YouTube] Raw author:`, JSON.stringify(basicInfo.author));
     console.log(`[YouTube] Raw duration:`, basicInfo.duration);
-    console.log(`[YouTube] Raw channel:`, JSON.stringify(basicInfo.channel));
     
     // Title - extract dengan helper function
     const title = extractText(basicInfo.title);
@@ -173,9 +199,8 @@ export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata |
     console.log(`[YouTube] Metadata parsed - Title: "${finalTitle}", Channel: "${finalChannel}", Duration: ${durationSeconds}s`);
 
     // Validate before returning - hanya reject jika SEMUA field kosong DAN tidak ada thumbnail
-    if (finalTitle === 'Unknown Title' && finalChannel === 'Unknown Channel' && durationSeconds === 0 && !thumbnail) {
+    if (finalTitle === 'Unknown Title' && finalChannel === 'Unknown Channel' && durationSeconds === 0) {
       console.error('[YouTube] All metadata fields are empty, something went wrong');
-      console.error('[YouTube] basic_info keys:', Object.keys(basicInfo));
       return null;
     }
 
