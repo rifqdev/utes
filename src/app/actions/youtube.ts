@@ -154,13 +154,18 @@ export async function getYouTubeMetadata(url: string): Promise<YouTubeMetadata |
     const finalTitle = title || 'Unknown Title';
     const finalChannel = channel || 'Unknown Channel';
     
-    console.log(`[YouTube] Metadata parsed successfully - Title: "${finalTitle}", Channel: "${finalChannel}", Duration: ${durationSeconds}s`);
+    console.log(`[YouTube] Metadata parsed - Title: "${finalTitle}", Channel: "${finalChannel}", Duration: ${durationSeconds}s`);
 
-    // Validate before returning
-    if (finalTitle === 'Unknown Title' && finalChannel === 'Unknown Channel' && durationSeconds === 0) {
-      console.error('[YouTube] All metadata fields are default values, something went wrong');
+    // Validate before returning - hanya reject jika SEMUA field kosong DAN tidak ada thumbnail
+    if (finalTitle === 'Unknown Title' && finalChannel === 'Unknown Channel' && durationSeconds === 0 && !thumbnail) {
+      console.error('[YouTube] All metadata fields are empty, something went wrong');
       console.error('[YouTube] basic_info keys:', Object.keys(basicInfo));
       return null;
+    }
+
+    // Log success jika ada minimal 1 field yang valid
+    if (finalTitle !== 'Unknown Title' || finalChannel !== 'Unknown Channel' || durationSeconds > 0) {
+      console.log(`[YouTube] ✓ Metadata extracted successfully`);
     }
 
     return {
