@@ -134,8 +134,8 @@ export default function VerifyPage() {
           <h3 className="font-bold text-base lg:text-lg mb-1">{youtubeMetadata.title}</h3>
           <p className="text-slate-500 text-xs lg:text-sm flex items-center gap-2">
              <span>{youtubeMetadata.channel}</span>
-             <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
-             <Clock className="w-3 h-3 lg:w-3.5 lg:h-3.5" /> {youtubeMetadata.duration}
+             {/* <span className="w-1 h-1 bg-slate-300 rounded-full"></span> */}
+             {/* <Clock className="w-3 h-3 lg:w-3.5 lg:h-3.5" /> {youtubeMetadata.duration} */}
           </p>
         </div>
       </Card>
@@ -161,7 +161,7 @@ export default function VerifyPage() {
             variant="secondary"
             onClick={handlePartialVideo}
             className="w-full justify-center"
-            disabled={!youtubeTranscript}
+            disabled={true}
           >
             Belum Selesai
           </Button>
