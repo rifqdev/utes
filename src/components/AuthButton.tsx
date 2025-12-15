@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { LogIn, User } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { User as SupabaseUser } from '@supabase/supabase-js';
 import { LogoutButton } from './LogoutButton';
+import { UserAvatar } from './UserAvatar';
+import { getUserDisplayName } from '@/lib/user-utils';
 
 export const AuthButton = () => {
   const [user, setUser] = useState<SupabaseUser | null>(null);
@@ -50,14 +52,14 @@ export const AuthButton = () => {
     );
   }
 
+  const displayName = getUserDisplayName(user);
+
   return (
     <div className="flex items-center gap-3">
       {/* User Info */}
       <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-lg">
-        <div className="p-1.5 bg-indigo-100 rounded-full">
-          <User size={16} className="text-indigo-600" />
-        </div>
-        <span className="text-sm font-medium text-slate-700">{user.email}</span>
+        <UserAvatar user={user} size="sm" />
+        <span className="text-sm font-medium text-slate-700">{displayName}</span>
       </div>
 
       {/* Logout Button */}

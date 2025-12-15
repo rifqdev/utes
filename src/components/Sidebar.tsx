@@ -11,6 +11,8 @@ import { useQuiz } from '@/context/QuizContext';
 import { getModeStyle, getScoreColor } from '@/lib/quiz-helpers';
 import { QUIZ_MODES } from '@/lib/constants';
 import type { QuizSession } from '@/context/LayoutContext';
+import { UserAvatar } from './UserAvatar';
+import { getUserDisplayName } from '@/lib/user-utils';
 
 export const Sidebar = () => {
   const { isSidebarOpen, toggleSidebar, quizSessions, loading, user, setUser, refreshHistory } = useLayout();
@@ -173,9 +175,7 @@ export const Sidebar = () => {
                 className="p-2 hover:bg-slate-100 rounded-lg transition-colors group"
                 title="Profile"
               >
-                <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                  <User size={18} className="text-indigo-600 w-4 h-4 lg:w-[18px] lg:h-[18px]" />
-                </div>
+                <UserAvatar user={user} size="md" />
               </button>
             </div>
           </div>
@@ -350,11 +350,9 @@ export const Sidebar = () => {
               {/* Header */}
               <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 text-white">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-                    <User size={20} />
-                  </div>
+                  <UserAvatar user={user} size="lg" className="border-2 border-white/30" />
                   <div>
-                    <p className="font-semibold text-sm">{user?.user_metadata?.name || 'User'}</p>
+                    <p className="font-semibold text-sm">{getUserDisplayName(user)}</p>
                     <p className="text-xs opacity-90 truncate max-w-[180px]">{user?.email || 'user@example.com'}</p>
                   </div>
                 </div>

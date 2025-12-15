@@ -3,25 +3,25 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
-export async function signInWithMagicLink(email: string) {
+export async function signInWithGoogle() {
   try {
     const supabase = await createClient();
     const siteUrl =
       process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
       options: {
-        emailRedirectTo: `${siteUrl}/auth/callback`,
+        redirectTo: `${siteUrl}/auth/callback`,
       },
     });
 
     if (error) {
-      console.error('Magic link error:', error);
+      console.error('Google sign in error:', error);
       return { error: error.message };
     }
 
-    return { success: true };
+    return { url: data.url };
   } catch (error) {
     console.error('Unexpected error:', error);
     return { error: 'Terjadi kesalahan. Silakan coba lagi.' };
